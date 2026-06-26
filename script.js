@@ -895,8 +895,8 @@ function updateCornerWarnings(updateAccessoryQty = false) {
         if (requiredScrews > 0) {
             warningHtml += `
                 <div class="warning-item">
-                    <span class="warning-badge" style="background:#059669;color:white;">สกรู + น็อต</span> 
-                    เวที 115cm จำนวน <strong>${stage115Count}</strong> ตัว, เวที 60cm จำนวน <strong>${stage60Count}</strong> ตัว (ต้องใช้ สกรู+น็อต <strong>${requiredScrews}</strong> ชุด)
+                    <span class="warning-badge" style="background:#059669;color:white;">Screw + Connector</span> 
+                    เวที 115cm จำนวน <strong>${stage115Count}</strong> ตัว, เวที 60cm จำนวน <strong>${stage60Count}</strong> ตัว (ต้องใช้ Screw+Connector <strong>${requiredScrews}</strong> ชุด)
                 </div>
             `;
         }

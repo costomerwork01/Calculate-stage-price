@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คำนวณราคาเวที</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>คำนวณราคาเวที</header>
+
+        <div class="main-content">
+            <!-- 1. Sidebar Left -->
+            <div class="sidebar-left">
+                <div class="section-title">1. เลือกและลากเวที</div>
+
+                <div style="margin-bottom: 15px; text-align: center;">
+<button id="rotate-btn" class="rotate-btn">
+                        🔄 หมุนเวที 115 cm (แนวนอน)
+                    </button>
+                    
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label for="stage-selector"
+                        style="font-weight: 600; font-size: 14px; display: block; margin-bottom: 8px; color: #1e40af;">ขนาดเวทีที่ต้องการ:</label>
+                    <select id="stage-selector"
+                        style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 14px; font-family: 'Prompt', sans-serif; cursor: pointer; outline: none; background: #f8fafc;">
+                        <optgroup label="115 cm series">
+                            <option
+                                value='{"width":115,"depth":60,"height":20,"lite":2800,"pro":3100,"name":"115 × 60 × 20 cm"}'>
+                                115 × 60 × 20 cm</option>
+                            <option
+                                value='{"width":115,"depth":60,"height":40,"lite":3200,"pro":3500,"name":"115 × 60 × 40 cm"}'>
+                                115 × 60 × 40 cm</option>
+                            <option
+                                value='{"width":115,"depth":60,"height":60,"lite":3400,"pro":3950,"name":"115 × 60 × 60 cm"}'>
+                                115 × 60 × 60 cm</option>
+                            <option
+                                value='{"width":115,"depth":60,"height":80,"lite":3600,"pro":4350,"name":"115 × 60 × 80 cm"}'>
+                                115 × 60 × 80 cm</option>
+                        </optgroup>
+                        <optgroup label="60 cm series">
+                            <option
+                                value='{"width":60,"depth":60,"height":20,"lite":1600,"pro":1800,"name":"60 × 60 × 20 cm"}'>
+                                60 × 60 × 20 cm</option>
+                            <option
+                                value='{"width":60,"depth":60,"height":40,"lite":1800,"pro":2100,"name":"60 × 60 × 40 cm"}'>
+                                60 × 60 × 40 cm</option>
+                            <option
+                                value='{"width":60,"depth":60,"height":60,"lite":2000,"pro":2500,"name":"60 × 60 × 60 cm"}'>
+                                60 × 60 × 60 cm</option>
+                            <option
+                                value='{"width":60,"depth":60,"height":80,"lite":2200,"pro":2800,"name":"60 × 60 × 80 cm"}'>
+                                60 × 60 × 80 cm</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div id="active-stage-draggable" class="stage-option" draggable="true" data-width="115" data-depth="60"
+                    data-height="20" data-lite="2800" data-pro="3100"
+                    style="border: 3px dashed #3b82f6; background: #eff6ff;">
+                    <div class="stage-size" id="active-stage-name" style="color: #1d4ed8;">115 × 60 × 20 cm</div>
+                    <div class="price-options">
+                        <div class="price-btn lite selected" data-type="lite" id="active-stage-lite">Lite 2,800</div>
+                        <div class="price-btn pro" data-type="pro" id="active-stage-pro">Pro 3,100</div>
+                    </div>
+                    <div
+                        style="text-align: center; margin-top: 12px; font-size: 13px; font-weight: 600; color: #3b82f6;">
+                        ✋ ลากกล่องนี้ไปวางบนตาราง</div>
+                </div>
+
+                <div id="trash-bin"
+                    style="margin-top: 20px; border: 3px dashed #ef4444; border-radius: 8px; padding: 20px; text-align: center; background: #fef2f2; color: #dc2626; font-weight: 600; transition: all 0.2s;">
+                    🗑️ ลากมาทิ้งที่นี่เพื่อลบ
+                </div>
+            </div>
+
+            <!-- Center Grid -->
+            <div class="main-area">
+                <div class="preview-area">
+                    <div class="section-title">2. ลากเวทีมาวางที่นี่</div>
+                    <div id="grid" class="grid-container"></div>
+                </div>
+
+                <button onclick="clearGrid()" class="clear-btn">ล้างการจัดวางทั้งหมด</button>
+
+                <!-- Dynamic Warnings -->
+                <div id="warning-container" class="warning-container" style="display: none;"></div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div style="width:24px;height:24px;background:#facc15;border-radius:4px;"></div><span>เวที 115
+                            cm</span>
+                    </div>
+                    <div class="legend-item">
+                        <div style="width:24px;height:24px;background:#86efac;border-radius:4px;"></div><span>เวที 60
+                            cm</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="sidebar-right">
+                <div class="section-title">4. อะไหล่ประกอบ</div>
+
+                <div class="accessory" data-price="20" id="acc-plat1">
+
+                    <div class="accessory-info">
+                        <p>แผ่นเหล็ก 1 รู (Plat 1)</p><br>
+                        <span style="color:#f59e0b">20 บาท</span>
+                    </div>
+                    <div class="accessory-qty">
+                        <button onclick="changeQty(this, -1)">–</button>
+                        <span class="qty">0</span>
+                        <button onclick="changeQty(this, 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="accessory" data-price="30" id="acc-plat2">
+
+                    <div class="accessory-info">
+                        <p>แผ่นเชื่อม 2 รู (Plat 2)</p><br>
+                        <span style="color:#f59e0b">30 บาท</span>
+                    </div>
+                    <div class="accessory-qty">
+                        <button onclick="changeQty(this, -1)">–</button>
+                        <span class="qty">0</span>
+                        <button onclick="changeQty(this, 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="accessory" data-price="40" id="acc-plat3">
+
+                    <div class="accessory-info">
+                        <p>แผ่นเชื่อม 3 รู (Plat 3)</p><br>
+                        <span style="color:#f59e0b">40 บาท</span>
+                    </div>
+                    <div class="accessory-qty">
+                        <button onclick="changeQty(this, -1)">–</button>
+                        <span class="qty">0</span>
+                        <button onclick="changeQty(this, 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="accessory" data-price="50" id="acc-plat4">
+
+                    <div class="accessory-info">
+                        <p>แผ่น 4 รู (Plat 4)</p><br>
+                        <span style="color:#f59e0b">50 บาท</span>
+                    </div>
+                    <div class="accessory-qty">
+                        <button onclick="changeQty(this, -1)">–</button>
+                        <span class="qty">0</span>
+                        <button onclick="changeQty(this, 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="accessory" data-price="30" id="acc-screw">
+
+                    <div class="accessory-info">
+                        <p>สกรู + น็อต</p><br>
+                        <span style="color:#f59e0b">30 บาท/ชุด</span>
+                    </div>
+                    <div class="accessory-qty">
+                        <button onclick="changeQty(this, -1)">–</button>
+                        <span class="qty">0</span>
+                        <button onclick="changeQty(this, 1)">+</button>
+                    </div>
+                </div>
+
+                <div id="total-price" class="total-price">
+                    <label>ราคารวมทั้งหมด</label>
+                    <div id="total-amount">0 บาท</div>
+                </div>
+
+                <!-- Stage set size info -->
+                <div id="stage-size-info" class="total-price" style="margin-top: 15px; background: linear-gradient(135deg, #f59e0b, #b45309);">
+                    <label style="font-weight:700;">ขนาดพื้นที่ของเซ็ต (คำนวณจากเวทีที่จัดวาง)</label>
+                    <div style="font-size:16px; line-height:1.6;">
+                        <div><span style="font-weight:700;">ความกว้าง:</span> <span id="stage-width-cm">0</span> cm</div>
+                        <div><span style="font-weight:700;">ความลึก:</span> <span id="stage-depth-cm">0</span> cm</div>
+                        <div><span style="font-weight:700;">พื้นที่รวม:</span> <span id="stage-area-m2">0</span> ตร.ม.</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+

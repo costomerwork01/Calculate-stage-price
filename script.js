@@ -15,6 +15,21 @@ const pointerDragThreshold = 8;
 const transparentDragImage = new Image();
 transparentDragImage.src = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 
+function getStageColorStyle(data) {
+    const height = parseInt(data.height) || 20;
+    const heightIndex = { 20: 0, 40: 1, 60: 2, 80: 3 }[height] ?? 0;
+    const palette = data.width === 115
+        ? ['#fef08a', '#facc15', '#eab308', '#ca8a04']
+        : ['#bbf7d0', '#86efac', '#4ade80', '#22c55e'];
+
+    return {
+        fill: palette[heightIndex],
+        border: data.width === 115 ? '#854d0e' : '#166534',
+        shadow: data.width === 115 ? 'rgba(234, 179, 8, 0.4)' : 'rgba(34, 197, 94, 0.35)',
+        text: '#1e293b'
+    };
+}
+
 function createGrid() {
     const grid = document.getElementById('grid');
     grid.innerHTML = '';
@@ -148,9 +163,14 @@ function updateDragPreview() {
     const dragOrient = currentDragData.isExisting ? currentDragData.orientation : currentOrientation;
     const w = (is115 && dragOrient === 'horizontal') ? 2 : 1;
     const h = (is115 && dragOrient === 'vertical') ? 2 : 1;
+    const colorStyle = getStageColorStyle(currentDragData);
 
     dragPreview.style.width = `${w * 48 + (w - 1) * 3}px`;
     dragPreview.style.height = `${h * 48 + (h - 1) * 3}px`;
+    dragPreview.style.backgroundColor = colorStyle.fill;
+    dragPreview.style.borderColor = colorStyle.border;
+    dragPreview.style.boxShadow = `0 0 0 3px ${colorStyle.shadow}`;
+    dragPreview.style.color = colorStyle.text;
     dragPreview.style.display = 'flex';
     dragPreview.textContent = `${currentDragData.height}cm`;
 }
@@ -501,7 +521,7 @@ function placeStage(data, startIndex, orientation) {
         return false;
     }
 
-    const color = data.width === 115 ? '#facc15' : '#86efac';
+    const colorStyle = getStageColorStyle(data);
 
     cellsToOccupy.forEach(idx => {
         const target = document.querySelector(`.grid-cell[data-index="${idx}"]`);
@@ -519,15 +539,15 @@ function placeStage(data, startIndex, orientation) {
     overlay.style.top = `${15 + row * 51}px`;
     overlay.style.width = `${w * 48 + (w - 1) * 3}px`;
     overlay.style.height = `${h * 48 + (h - 1) * 3}px`;
-    overlay.style.backgroundColor = color;
-    overlay.style.border = '3px solid #854d0e';
-    overlay.style.boxShadow = '0 0 0 3px rgba(234, 179, 8, 0.4)';
+    overlay.style.backgroundColor = colorStyle.fill;
+    overlay.style.border = `3px solid ${colorStyle.border}`;
+    overlay.style.boxShadow = `0 0 0 3px ${colorStyle.shadow}`;
     overlay.style.display = 'flex';
     overlay.style.alignItems = 'center';
     overlay.style.justifyContent = 'center';
     overlay.style.fontWeight = '700';
     overlay.style.fontSize = '14px';
-    overlay.style.color = '#1e40af';
+    overlay.style.color = colorStyle.text;
     overlay.style.pointerEvents = 'auto';
     overlay.style.zIndex = '10';
     overlay.style.boxSizing = 'border-box';
@@ -981,6 +1001,35 @@ function updateCornerWarnings(updateAccessoryQty = false) {
 function calculateTotal(layoutChanged = false) {
     // Update warnings and sync accessory counts if needed
     updateCornerWarnings(layoutChanged);
+
+    const usageListEl = document.getElementById('stage-usage-list');
+    const usageTotalEl = document.getElementById('stage-usage-total-count');
+    if (usageListEl) {
+        const stageUsage = new Map();
+
+        placedStages.forEach(stage => {
+            const width = stage.data.width || 0;
+            const depth = stage.data.depth || 60;
+            const height = stage.data.height || 0;
+            const key = `${width} × ${depth} × ${height} cm`;
+            stageUsage.set(key, (stageUsage.get(key) || 0) + 1);
+        });
+
+        if (stageUsage.size === 0) {
+            usageListEl.innerHTML = '<div class="stage-usage-empty">ยังไม่ได้วางเวที</div>';
+        } else {
+            usageListEl.innerHTML = Array.from(stageUsage.entries())
+                .sort(([a], [b]) => a.localeCompare(b, 'th'))
+                .map(([size, count]) => `
+                    <div class="stage-usage-row">
+                        <span>${size}</span>
+                        <span class="stage-usage-count">${count} ตัว</span>
+                    </div>
+                `)
+                .join('');
+        }
+    }
+    if (usageTotalEl) usageTotalEl.textContent = placedStages.length.toLocaleString('th-TH');
 
     let liteTotal = placedStages.reduce((sum, stage) => sum + (stage.priceLite || stage.data.priceLite || 0), 0);
     let proTotal = placedStages.reduce((sum, stage) => sum + (stage.pricePro || stage.data.pricePro || stage.data.priceLite || 0), 0);

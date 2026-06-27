@@ -250,9 +250,41 @@ header {
     box-shadow: 0 10px 25px -5px rgb(16 185 129 / 40%);
 }
 
-#total-amount {
-    font-size: 32px;
+.total-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.total-row span {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.total-row strong {
+    font-size: 25px;
     font-weight: 700;
+    line-height: 1.15;
+    text-align: right;
+}
+
+.total-row-lite {
+    border-left: 5px solid #facc15;
+}
+
+.total-row-pro {
+    border-left: 5px solid #93c5fd;
 }
 
 .clear-btn {
@@ -450,7 +482,7 @@ header {
         align-items: flex-start;
     }
 
-    #total-amount {
-        font-size: 26px;
+    .total-row strong {
+        font-size: 22px;
     }
 }

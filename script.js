@@ -12,6 +12,8 @@ let suppressOverlayClickId = null;
 let suppressActiveStageClick = false;
 
 const pointerDragThreshold = 8;
+const transparentDragImage = new Image();
+transparentDragImage.src = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 
 function createGrid() {
     const grid = document.getElementById('grid');
@@ -53,7 +55,8 @@ function getActiveStageData() {
     return {
         width: parseInt(option.dataset.width),
         height: parseInt(option.dataset.height),
-        priceLite: parseInt(option.dataset.lite)
+        priceLite: parseInt(option.dataset.lite),
+        pricePro: parseInt(option.dataset.pro)
     };
 }
 
@@ -78,6 +81,12 @@ function selectActiveStageForTap(e) {
 
     if (e && e.target.closest('.price-btn')) return;
 
+    const activeStage = document.getElementById('active-stage-draggable');
+    if (tapSelectedElement === activeStage && currentDragData && currentDragData.isTapPlacement) {
+        clearTapSelection();
+        return;
+    }
+
     const data = getActiveStageData();
     if (!data) return;
 
@@ -85,15 +94,28 @@ function selectActiveStageForTap(e) {
         ...data,
         isTapPlacement: true
     };
-    setTapSelection(document.getElementById('active-stage-draggable'));
+    setTapSelection(activeStage);
 }
 
 function tapPlaceStage(e) {
     if (!currentDragData || !currentDragData.isTapPlacement) return;
 
     const startIndex = parseInt(e.currentTarget.dataset.index);
-    const success = placeStage(currentDragData, startIndex, currentOrientation);
-    if (success) clearTapSelection();
+    placeStage(currentDragData, startIndex, currentOrientation);
+}
+
+function setupTapPlacementCancel() {
+    document.addEventListener('click', (e) => {
+        if (!currentDragData || !currentDragData.isTapPlacement) return;
+        if (e.target.closest('#active-stage-draggable')) return;
+        if (e.target.closest('#grid')) return;
+
+        clearTapSelection();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') clearTapSelection();
+    });
 }
 
 function dragStart(e) {
@@ -101,17 +123,21 @@ function dragStart(e) {
     currentDragData = {
         width: parseInt(option.dataset.width),
         height: parseInt(option.dataset.height),
-        priceLite: parseInt(option.dataset.lite)
+        priceLite: parseInt(option.dataset.lite),
+        pricePro: parseInt(option.dataset.pro)
     };
 
     setTapSelection(null);
     e.dataTransfer.setData('text/plain', JSON.stringify(currentDragData));
+    e.dataTransfer.setDragImage(transparentDragImage, 0, 0);
     option.classList.add('dragging');
     updateDragPreview();
 }
 
 function dragEnd(e) {
     e.currentTarget.classList.remove('dragging');
+    clearDragHighlights();
+    if (currentDragData && !currentDragData.isTapPlacement) currentDragData = null;
     hideDragPreview();
 }
 
@@ -293,50 +319,89 @@ function dragOver(e) {
     e.preventDefault();
     if (!currentDragData) return;
 
-    const cell = e.currentTarget;
-    cell.classList.remove('dragover-invalid');
-
-    const index = parseInt(cell.dataset.index);
-    const row = Math.floor(index / gridSize);
-    const col = index % gridSize;
-
-    const dragOrient = currentDragData.isExisting ? currentDragData.orientation : currentOrientation;
-    const w = (currentDragData.width === 115 && dragOrient === 'horizontal') ? 2 : 1;
-    const h = (currentDragData.width === 115 && dragOrient === 'vertical') ? 2 : 1;
-
-    if (col + w > gridSize || row + h > gridSize) {
-        cell.classList.add('dragover-invalid');
-    } else {
-        cell.classList.add('dragover');
-    }
+    updateDragHighlights(parseInt(e.currentTarget.dataset.index));
 
     dragPreview.style.left = `${e.pageX + 20}px`;
     dragPreview.style.top = `${e.pageY + 20}px`;
 }
 
 function dragLeave(e) {
-    e.currentTarget.classList.remove('dragover', 'dragover-invalid');
+    if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('#grid')) clearDragHighlights();
 }
 
 function dropStage(e) {
     e.preventDefault();
     const cell = e.currentTarget;
-    cell.classList.remove('dragover', 'dragover-invalid');
+    clearDragHighlights();
     hideDragPreview();
 
     if (!currentDragData) return;
 
     const startIndex = parseInt(cell.dataset.index);
     const dragOrient = currentDragData.isExisting ? currentDragData.orientation : currentOrientation;
+    const dataToPlace = {
+        width: currentDragData.width,
+        height: currentDragData.height,
+        priceLite: currentDragData.priceLite,
+        pricePro: currentDragData.pricePro
+    };
+    const originalStartIndex = currentDragData.originalStartIndex;
+    const originalOrientation = currentDragData.orientation;
+    const isExisting = currentDragData.isExisting;
 
-    if (currentDragData.isExisting) {
+    if (isExisting) {
         removeStage(currentDragData.stageId);
     }
 
-    const success = placeStage(currentDragData, startIndex, dragOrient);
+    const success = placeStage(dataToPlace, startIndex, dragOrient);
+    if (!success && isExisting && originalStartIndex !== undefined) {
+        placeStage(dataToPlace, originalStartIndex, originalOrientation);
+    }
+
     if (success) {
         currentDragData = null;
     }
+}
+
+function getDragFootprint(data, orientation) {
+    return {
+        w: (data.width === 115 && orientation === 'horizontal') ? 2 : 1,
+        h: (data.width === 115 && orientation === 'vertical') ? 2 : 1
+    };
+}
+
+function clearDragHighlights() {
+    document.querySelectorAll('.grid-cell.dragover, .grid-cell.dragover-invalid').forEach(cell => {
+        cell.classList.remove('dragover', 'dragover-invalid');
+    });
+}
+
+function updateDragHighlights(startIndex) {
+    clearDragHighlights();
+
+    const row = Math.floor(startIndex / gridSize);
+    const col = startIndex % gridSize;
+    const dragOrient = currentDragData.isExisting ? currentDragData.orientation : currentOrientation;
+    const { w, h } = getDragFootprint(currentDragData, dragOrient);
+    const isOutOfBounds = col + w > gridSize || row + h > gridSize;
+    let isBlocked = false;
+    const cells = [];
+
+    for (let r = 0; r < h; r++) {
+        for (let c = 0; c < w; c++) {
+            const targetRow = row + r;
+            const targetCol = col + c;
+            if (targetRow >= gridSize || targetCol >= gridSize) continue;
+
+            const cell = document.querySelector(`.grid-cell[data-index="${targetRow * gridSize + targetCol}"]`);
+            if (!cell) continue;
+            if (cell.classList.contains('occupied')) isBlocked = true;
+            cells.push(cell);
+        }
+    }
+
+    const highlightClass = isOutOfBounds || isBlocked ? 'dragover-invalid' : 'dragover';
+    cells.forEach(cell => cell.classList.add(highlightClass));
 }
 
 function removeStage(id) {
@@ -498,9 +563,11 @@ function placeStage(data, startIndex, orientation) {
             ...stage.data,
             isExisting: true,
             stageId: currentId,
-            orientation: stage.orientation
+            orientation: stage.orientation,
+            originalStartIndex: stage.row * gridSize + stage.col
         };
         e.dataTransfer.setData('text/plain', 'existing');
+        e.dataTransfer.setDragImage(transparentDragImage, 0, 0);
         stage.cells.forEach(idx => {
             const cell = document.querySelector(`.grid-cell[data-index="${idx}"]`);
             cell.classList.remove('occupied');
@@ -527,6 +594,7 @@ function placeStage(data, startIndex, orientation) {
             }
             currentDragData = null;
         }
+        clearDragHighlights();
         hideDragPreview();
     });
 
@@ -544,7 +612,8 @@ function placeStage(data, startIndex, orientation) {
         id: currentId,
         data: data,
         orientation: orientation,
-        price: data.priceLite,
+        priceLite: data.priceLite,
+        pricePro: data.pricePro || data.priceLite,
         cells: cellsToOccupy,
         row: row,
         col: col,
@@ -913,14 +982,22 @@ function calculateTotal(layoutChanged = false) {
     // Update warnings and sync accessory counts if needed
     updateCornerWarnings(layoutChanged);
 
-    let total = placedStages.reduce((sum, stage) => sum + stage.price, 0);
+    let liteTotal = placedStages.reduce((sum, stage) => sum + (stage.priceLite || stage.data.priceLite || 0), 0);
+    let proTotal = placedStages.reduce((sum, stage) => sum + (stage.pricePro || stage.data.pricePro || stage.data.priceLite || 0), 0);
+    let accessoryTotal = 0;
 
     document.querySelectorAll('.accessory').forEach(acc => {
         const qty = parseInt(acc.querySelector('.qty').textContent) || 0;
-        total += qty * parseInt(acc.dataset.price);
+        accessoryTotal += qty * parseInt(acc.dataset.price);
     });
 
-    document.getElementById('total-amount').textContent = total.toLocaleString('th-TH') + " บาท";
+    liteTotal += accessoryTotal;
+    proTotal += accessoryTotal;
+
+    const liteTotalEl = document.getElementById('total-lite-amount');
+    const proTotalEl = document.getElementById('total-pro-amount');
+    if (liteTotalEl) liteTotalEl.textContent = liteTotal.toLocaleString('th-TH') + " บาท";
+    if (proTotalEl) proTotalEl.textContent = proTotal.toLocaleString('th-TH') + " บาท";
 
     // Calculate set bounding size with correct 115 orientation mapping.
     // Mapping requirement:
@@ -1013,6 +1090,7 @@ function clearGrid() {
 window.onload = () => {
     createGrid();
     setupRotateButton();
+    setupTapPlacementCancel();
 
     const draggable = document.getElementById('active-stage-draggable');
     if (draggable) {
@@ -1037,13 +1115,14 @@ window.onload = () => {
 
             document.getElementById('active-stage-name').textContent = data.name;
             document.getElementById('active-stage-lite').textContent = `Lite ${data.lite.toLocaleString()}`;
-            document.getElementById('active-stage-pro').textContent = `Pro ${data.pro.toLocaleString()}`;
+            document.getElementById('active-stage-pro').textContent = `Plus ${data.pro.toLocaleString()}`;
 
             if (currentDragData && currentDragData.isTapPlacement) {
                 currentDragData = {
                     width: data.width,
                     height: data.height,
                     priceLite: data.lite,
+                    pricePro: data.pro,
                     isTapPlacement: true
                 };
             }
@@ -1062,6 +1141,8 @@ window.onload = () => {
         trashBin.addEventListener('drop', e => {
             e.preventDefault();
             trashBin.style.background = '#fef2f2';
+            clearDragHighlights();
+            hideDragPreview();
             if (currentDragData && currentDragData.isExisting) {
                 removeStage(currentDragData.stageId);
                 currentDragData = null;

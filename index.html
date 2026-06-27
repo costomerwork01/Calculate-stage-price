@@ -40,7 +40,7 @@
                                 value='{"width":115,"depth":60,"height":60,"lite":3400,"pro":3950,"name":"115 × 60 × 60 cm"}'>
                                 115 × 60 × 60 cm</option>
                             <option
-                                value='{"width":115,"depth":60,"height":80,"lite":3600,"pro":4350,"name":"115 × 60 × 80 cm"}'>
+                                value='{"width":115,"depth":60,"height":80,"lite":3700,"pro":4350,"name":"115 × 60 × 80 cm"}'>
                                 115 × 60 × 80 cm</option>
                         </optgroup>
                         <optgroup label="60 cm series">
@@ -66,7 +66,7 @@
                     <div class="stage-size" id="active-stage-name" style="color: #1d4ed8;">115 × 60 × 20 cm</div>
                     <div class="price-options">
                         <div class="price-btn lite selected" data-type="lite" id="active-stage-lite">Lite 2,800</div>
-                        <div class="price-btn pro" data-type="pro" id="active-stage-pro">Pro 3,100</div>
+                        <div class="price-btn pro" data-type="pro" id="active-stage-pro">Plus 3,100</div>
                     </div>
                     <div
                         style="text-align: center; margin-top: 12px; font-size: 13px; font-weight: 600; color: #3b82f6;">
@@ -174,7 +174,16 @@
 
                 <div id="total-price" class="total-price">
                     <label>ราคารวมทั้งหมด</label>
-                    <div id="total-amount">0 บาท</div>
+                    <div class="total-breakdown">
+                        <div class="total-row total-row-lite">
+                            <span>Lite</span>
+                            <strong id="total-lite-amount">0 บาท</strong>
+                        </div>
+                        <div class="total-row total-row-pro">
+                            <span>Plus</span>
+                            <strong id="total-pro-amount">0 บาท</strong>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Stage set size info -->
@@ -194,5 +203,4 @@
     <script src="script.js"></script>
 </body>
 </html>
-
 
